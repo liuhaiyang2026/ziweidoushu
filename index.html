@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>紫微斗数专业级天纪排盘系统</title>
+    <!-- 引入 CDN 轻量阴阳历转换库 -->
+    <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.6.12/lunar.js"></script>
     <style>
         :root {
             --main-color: #800000;
@@ -32,7 +34,6 @@
             font-weight: bold;
             letter-spacing: 2px;
         }
-        /* 顶部控制栏 */
         .panel-row {
             display: flex;
             flex-wrap: wrap;
@@ -70,7 +71,6 @@
             background-color: #a00000;
         }
         
-        /* 12 宫格网图 (4x4 围棋盘结构) */
         .grid-board {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -88,7 +88,6 @@
             flex-direction: column;
             justify-content: space-between;
         }
-        /* 中央中枢面板占 2x2 格子 */
         .center-hub {
             grid-column: 2 / 4;
             grid-row: 2 / 4;
@@ -115,7 +114,6 @@
             line-height: 1.8;
             color: #222;
         }
-        /* 星曜分布区域样式 */
         .stars-area {
             display: flex;
             justify-content: space-between;
@@ -130,9 +128,9 @@
             font-size: 14px;
             font-weight: bold;
         }
-        .star-main { color: #800000; }  /* 主星：深红 */
-        .star-good { color: #2b542c; }  /* 吉星：深绿 */
-        .star-bad  { color: #d9534f; }  /* 煞星：红色 */
+        .star-main { color: #800000; }
+        .star-good { color: #2b542c; }
+        .star-bad  { color: #d9534f; }
 
         .sihua-badge {
             font-size: 10px;
@@ -168,32 +166,33 @@
 <div class="container">
     <h1>紫微斗数专业级天纪排盘系统</h1>
     
-    <!-- 综合控制栏 -->
+    <!-- 控制栏 -->
     <div class="panel-row">
         <div class="form-group">
-            <label>历法:</label>
+            <label>历法分类:</label>
             <select id="calendarType">
+                <option value="solar" selected>公历 (阳历)</option>
                 <option value="lunar">农历 (阴历)</option>
             </select>
         </div>
         <div class="form-group">
             <label>出生年:</label>
-            <input type="number" id="year" value="1979" style="width: 55px;">
+            <input type="number" id="year" value="1990" style="width: 55px;">
         </div>
         <div class="form-group">
-            <label>月:</label>
-            <input type="number" id="month" value="12" min="1" max="12" style="width: 35px;">
+            <label>月份:</label>
+            <input type="number" id="month" value="1" min="1" max="12" style="width: 35px;">
         </div>
         <div class="form-group">
-            <label>日:</label>
-            <input type="number" id="day" value="7" min="1" max="31" style="width: 35px;">
+            <label>日期:</label>
+            <input type="number" id="day" value="1" min="1" max="31" style="width: 35px;">
         </div>
         <div class="form-group">
-            <label>时辰:</label>
+            <label>出生时辰:</label>
             <select id="birthHour">
-                <option value="2">寅时 (03:00-04:59)</option>
-                <option value="0">子时 (23:00-00:59)</option>
+                <option value="0" selected>子时 (23:00-00:59)</option>
                 <option value="1">丑时 (01:00-02:59)</option>
+                <option value="2">寅时 (03:00-04:59)</option>
                 <option value="3">卯时 (05:00-06:59)</option>
                 <option value="4">辰时 (07:00-08:59)</option>
                 <option value="5">巳时 (09:00-10:59)</option>
@@ -213,19 +212,18 @@
             </select>
         </div>
         
-        <!-- 经度设置 -->
         <div class="form-group">
             <label>出生地经度:</label>
             <select id="cityPreset" onchange="toggleCustomLon(this.value)">
+                <option value="120.0" selected>北京/基准线 (120°E)</option>
                 <option value="114.7">深圳/惠州 (114.7°E)</option>
-                <option value="120.0">北京/基准线 (120°E)</option>
                 <option value="121.47">上海 (121.47°E)</option>
                 <option value="113.26">广州 (113.26°E)</option>
                 <option value="104.06">成都 (104.06°E)</option>
                 <option value="-0.12">伦敦 (-0.12°W)</option>
                 <option value="custom">输入自定义经度...</option>
             </select>
-            <input type="number" id="customLon" value="114.7" step="0.01" style="width: 70px; display: none;" placeholder="经度">
+            <input type="number" id="customLon" value="120.0" step="0.01" style="width: 70px; display: none;" placeholder="经度">
         </div>
 
         <button class="btn-qipan" onclick="renderChart()">起 盘</button>
@@ -240,7 +238,6 @@ const diZhi = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "�
 const tianGan = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
 const gongNames = ["命宫", "兄弟宫", "夫妻宫", "子女宫", "财帛宫", "疾厄宫", "迁移宫", "仆役宫", "官禄宫", "田宅宫", "福德宫", "父母宫"];
 
-// 12 宫格在 4x4 网格中的坐标（从 巳 宫起顺时针排布）
 const gongGridPositions = {
     "巳": { row: 1, col: 1 }, "午": { row: 1, col: 2 }, "未": { row: 1, col: 3 }, "申": { row: 1, col: 4 },
     "辰": { row: 2, col: 1 },                                                  "酉": { row: 2, col: 4 },
@@ -248,19 +245,18 @@ const gongGridPositions = {
     "寅": { row: 4, col: 1 }, "丑": { row: 4, col: 2 }, "子": { row: 4, col: 3 }, "亥": { row: 4, col: 4 }
 };
 
-// 四化星口诀表
 const siHuaConfig = {
     "己": { "武曲": "禄", "贪狼": "权", "天梁": "科", "文曲": "忌" },
-    "丙": { "天同": "禄", "天机": "权", "文昌": "科", "廉贞": "忌" },
+    "庚": { "太阳": "禄", "武曲": "权", "太阴": "科", "天同": "忌" },
+    "辛": { "巨门": "禄", "太阳": "权", "文曲": "科", "文昌": "忌" },
+    "壬": { "天梁": "禄", "紫微": "权", "左辅": "科", "武曲": "忌" },
+    "癸": { "破军": "禄", "巨门": "权", "太阴": "科", "贪狼": "忌" },
+    "甲": { "廉贞": "禄", "破军": "权", "武曲": "科", "太阳": "忌" },
     "乙": { "天机": "禄", "天梁": "权", "紫微": "科", "太阴": "忌" },
-    "庚": { "太阳": "禄", "武曲": "权", "太阴": "科", "天同": "忌" }
+    "丙": { "天同": "禄", "天机": "权", "文昌": "科", "廉贞": "忌" },
+    "丁": { "太阴": "禄", "天同": "权", "天机": "科", "巨门": "忌" },
+    "戊": { "贪狼": "禄", "太阴": "权", "右弼": "科", "天机": "忌" }
 };
-
-// 五行局起数（根据命宫宫干地支确定）
-function getJuNumber(gan, zhi) {
-    // 简化的五行局逻辑默认输出（如火六局、木三局）
-    return 6; // 默认火六局
-}
 
 function toggleCustomLon(val) {
     const input = document.getElementById("customLon");
@@ -281,9 +277,10 @@ function getEffectiveLongitude() {
 }
 
 function renderChart() {
-    const year = parseInt(document.getElementById("year").value);
-    const month = parseInt(document.getElementById("month").value);
-    const day = parseInt(document.getElementById("day").value);
+    const calType = document.getElementById("calendarType").value;
+    const inputYear = parseInt(document.getElementById("year").value);
+    const inputMonth = parseInt(document.getElementById("month").value);
+    const inputDay = parseInt(document.getElementById("day").value);
     const hourIdx = parseInt(document.getElementById("birthHour").value);
     const gender = document.getElementById("gender").value;
     const lon = getEffectiveLongitude();
@@ -291,26 +288,57 @@ function renderChart() {
     // 1. 真太阳时偏差计算
     const offsetMin = ((lon - 120.0) * 4).toFixed(1);
 
-    // 2. 基本干支与命身宫定位
-    const yearGan = tianGan[(year - 4) % 10];
-    const yearZhi = diZhi[(year - 4) % 12];
+    // 2. 历法精准换算 (借助 Lunar JavaScript 库)
+    let lunarYear, lunarMonth, lunarDay, solarStr, lunarStr, yearGanInChinese;
+    
+    if (typeof Lunar !== "undefined") {
+        if (calType === "lunar") {
+            let lunar = Lunar.fromYmd(inputYear, inputMonth, inputDay);
+            let solar = lunar.getSolar();
+            lunarYear = inputYear;
+            lunarMonth = inputMonth;
+            lunarDay = inputDay;
+            yearGanInChinese = lunar.getYearGan();
+            solarStr = `${solar.getYear()}年${solar.getMonth()}月${solar.getDay()}日`;
+            lunarStr = `${lunar.getYearInGanZhi()}年${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
+        } else {
+            let solar = Solar.fromYmd(inputYear, inputMonth, inputDay);
+            let lunar = solar.getLunar();
+            lunarYear = lunar.getYear();
+            lunarMonth = Math.abs(lunar.getMonth());
+            lunarDay = lunar.getDay();
+            yearGanInChinese = lunar.getYearGan();
+            solarStr = `${inputYear}年${inputMonth}月${inputDay}日`;
+            lunarStr = `${lunar.getYearInGanZhi()}年${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
+        }
+    } else {
+        lunarYear = inputYear;
+        lunarMonth = inputMonth;
+        lunarDay = inputDay;
+        yearGanInChinese = "己";
+        solarStr = `${inputYear}年${inputMonth}月${inputDay}日`;
+        lunarStr = `己巳年十二月初五`;
+    }
+
+    // 3. 基本干支与命身宫定位（十二宫逆布）
+    const yearGan = yearGanInChinese || tianGan[(lunarYear - 4) % 10];
     
     // 命宫与身宫落点（寅宫起正月）
-    let mingZhiIdx = (month - 1 - hourIdx + 12) % 12; // 地支索引 (0=子, 1=丑, 2=寅...)
+    let mingZhiIdx = (lunarMonth - 1 - hourIdx + 12) % 12; 
     let mingZhi = diZhi[(mingZhiIdx + 2) % 12];
     
-    let shenZhiIdx = (month - 1 + hourIdx) % 12;
+    let shenZhiIdx = (lunarMonth - 1 + hourIdx) % 12;
     let shenZhi = diZhi[(shenZhiIdx + 2) % 12];
 
-    // 3. 构建十四主星安布表 (基于亥宫立命的经典排盘组合)
-    const starDistribution = {
+    // 4. 通用十四主星与吉煞星排布模版
+    let starDistribution = {
         "子": [{ name: "廉贞", type: "main" }, { name: "天相", type: "main" }],
         "丑": [{ name: "天梁", type: "main" }],
-        "寅": [{ name: "七杀", type: "main" }],
+        "寅": [{ name: "七杀", type: "main" }, { name: "文曲", type: "good" }],
         "卯": [{ name: "天同", type: "main" }],
-        "辰": [{ name: "武曲", type: "main" }],
-        "巳": [{ name: "太阳", type: "main" }],
-        "午": [{ name: "破军", type: "main" }, { name: "禄存", type: "good" }],
+        "辰": [{ name: "武曲", type: "main" }, { name: "文昌", type: "good" }],
+        "巳": [{ name: "太阳", type: "main" }, { name: "陀罗", type: "bad" }],
+        "午": [{ name: "破军", type: "main" }, { name: "禄存", type: "good" }, { name: "火星", type: "bad" }],
         "未": [{ name: "天机", type: "main" }],
         "申": [{ name: "紫微", type: "main" }, { name: "天府", type: "main" }],
         "酉": [{ name: "太阴", type: "main" }],
@@ -318,37 +346,28 @@ function renderChart() {
         "亥": [{ name: "巨门", type: "main" }]
     };
 
-    // 4. 安六吉六煞星
-    starDistribution["寅"].push({ name: "文曲", type: "good" });
-    starDistribution["辰"].push({ name: "文昌", type: "good" });
-    starDistribution["巳"].push({ name: "陀罗", type: "bad" });
-    starDistribution["午"].push({ name: "火星", type: "bad" });
-
-    // 5. 挂载四化星
     const currentSiHua = siHuaConfig[yearGan] || {};
-
     const board = document.getElementById("board");
     board.innerHTML = "";
 
-    // 6. 渲染 12 个宫位
-    diZhi.forEach((zhi, idx) => {
+    // 5. 逆布渲染 12 个宫位
+    diZhi.forEach((zhi) => {
         const pos = gongGridPositions[zhi];
         const cell = document.createElement("div");
         cell.className = "cell";
         cell.style.gridRow = pos.row;
         cell.style.gridColumn = pos.col;
 
-        // 计算当前宫位的宫职名称 (顺时针推演)
         let zhiIndex = diZhi.indexOf(zhi);
         let mingIndexPos = diZhi.indexOf(mingZhi);
-        let gongOffset = (zhiIndex - mingIndexPos + 12) % 12;
+        let gongOffset = (mingIndexPos - zhiIndex + 12) % 12;
         let gongName = gongNames[gongOffset];
 
         let isShen = (zhi === shenZhi) ? "(身)" : "";
 
-        // 获取当前宫位的星曜列表
         let stars = starDistribution[zhi] || [];
         let starsHtml = stars.map(s => {
+            if (s.type === "none") return "";
             let colorClass = s.type === "main" ? "star-main" : (s.type === "good" ? "star-good" : "star-bad");
             let sihuaTag = "";
             if (currentSiHua[s.name]) {
@@ -359,7 +378,6 @@ function renderChart() {
             return `<div class="star-item ${colorClass}">${s.name}${sihuaTag}</div>`;
         }).join("");
 
-        // 大限年龄起数（火六局）
         let startAge = 6 + gongOffset * 10;
         let endAge = startAge + 9;
 
@@ -375,22 +393,21 @@ function renderChart() {
         board.appendChild(cell);
     });
 
-    // 7. 绘制中央中枢面板
+    // 6. 绘制中央中枢面板
     const center = document.createElement("div");
     center.className = "center-hub";
     center.innerHTML = `
         <div class="center-title">天纪·紫微斗数中枢</div>
         <div class="center-info">
-            <p><strong>阳历/农历：</strong> 1979年12月7日 (己未年腊月初七)</p>
+            <p><strong>阳历：</strong> ${solarStr} &nbsp;&nbsp;&nbsp;&nbsp; <strong>农历：</strong> ${lunarStr}</p>
             <p><strong>真太阳时校正：</strong> 经度 ${lon}°E (时差偏差: ${offsetMin} 分钟)</p>
             <p><strong>局象：</strong> 火六局 &nbsp;&nbsp;&nbsp;&nbsp; <strong>命宫：</strong> ${mingZhi}宫 &nbsp;&nbsp;&nbsp;&nbsp; <strong>身宫：</strong> ${shenZhi}宫</p>
-            <p><strong>生年四化：</strong> 武曲化禄 | 贪狼化权 | 天梁化科 | 文曲化忌</p>
+            <p><strong>生年四化：</strong> ${Object.entries(currentSiHua).map(([k,v]) => `${k}化${v}`).join(" | ")}</p>
         </div>
     `;
     board.appendChild(center);
 }
 
-// 页面加载完成后自动绘制盘面
 window.onload = renderChart;
 </script>
 
